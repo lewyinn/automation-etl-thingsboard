@@ -8,7 +8,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOCS_DIR = os.path.join(BASE_DIR, "document")
 CSV_DIR = os.path.join(BASE_DIR, "csv")
 TB_URL = "http://localhost:8081"
-BATCH_SIZE = 100
 
 METRIC_KEYS = {
     2: {"name": "rPDU2DeviceStatusPower", "divisor": 100.0},
@@ -118,26 +117,16 @@ def send_telemetry(device_id, token, payload):
     }
     
     total = len(payload)
-    print(f"\nMengirim {total} data telemetry ke ThingsBoard (Batch per {BATCH_SIZE} record)...")
+    print(f"\nMengirim SELURUH {total} data telemetry dalam 1 request HTTP sekaligus ke ThingsBoard...")
     
-    success_count = 0
-    total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
-
-    for i in range(0, total, BATCH_SIZE):
-        batch = payload[i : i + BATCH_SIZE]
-        batch_no = (i // BATCH_SIZE) + 1
-        
-        try:
-            res = requests.post(url, data=json.dumps(batch), headers=headers)
-            if res.status_code == 200:
-                success_count += len(batch)
-                print(f"[+] Batch {batch_no}/{total_batches} ({len(batch)} record): Terkirim [200 OK]")
-            else:
-                print(f"[-] Batch {batch_no}/{total_batches} gagal ({res.status_code}): {res.text}")
-        except Exception as e:
-            print(f"[-] Batch {batch_no}/{total_batches} error koneksi: {e}")
-
-    print(f"\n[+] Selesai! Total {success_count}/{total} record telemetry berhasil masuk ke ThingsBoard.")
+    try:
+        res = requests.post(url, data=json.dumps(payload), headers=headers)
+        if res.status_code == 200:
+            print(f"[+] Telemetry BERHASIL TERKIRIM dalam 1 request! (Total {total} record)")
+        else:
+            print(f"[-] Pengiriman gagal ({res.status_code}): {res.text}")
+    except Exception as e:
+        print(f"[-] Error mengirim data: {e}")
 
 
 def main():

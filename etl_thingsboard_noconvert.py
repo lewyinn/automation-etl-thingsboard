@@ -10,17 +10,17 @@ CSV_DIR = os.path.join(BASE_DIR, "csv")
 TB_URL = "http://localhost:8081"
 
 METRIC_KEYS = {
-    2: {"name": "rPDU2DeviceStatusPower", "divisor": 100.0},
-    3: {"name": "rPDU2DeviceStatusPeakPower", "divisor": 100.0},
-    4: {"name": "rPDU2DeviceStatusEnergy", "divisor": 10.0},
-    5: {"name": "rPDU2SensorTempHumidityStatusTempC", "divisor": 10.0},
-    6: {"name": "rPDU2SensorTempHumidityStatusRelativeHumidity", "divisor": 1.0},
-    7: {"name": "rPDU2PhaseStatusCurrent", "divisor": 10.0},
-    8: {"name": "rPDU2PhaseStatusPeakCurrent", "divisor": 10.0},
-    9: {"name": "rPDU2BankStatusCurrent1", "divisor": 10.0},
-    10: {"name": "rPDU2BankStatusCurrent2", "divisor": 10.0},
-    11: {"name": "rPDU2BankStatusPeakCurrent1", "divisor": 10.0},
-    12: {"name": "rPDU2BankStatusPeakCurrent2", "divisor": 10.0}
+    2: "rPDU2DeviceStatusPower",
+    3: "rPDU2DeviceStatusPeakPower",
+    4: "rPDU2DeviceStatusEnergy",
+    5: "rPDU2SensorTempHumidityStatusTempC",
+    6: "rPDU2SensorTempHumidityStatusRelativeHumidity",
+    7: "rPDU2PhaseStatusCurrent",
+    8: "rPDU2PhaseStatusPeakCurrent",
+    9: "rPDU2BankStatusCurrent1",
+    10: "rPDU2BankStatusCurrent2",
+    11: "rPDU2BankStatusPeakCurrent1",
+    12: "rPDU2BankStatusPeakCurrent2"
 }
 
 
@@ -62,7 +62,7 @@ def process_txt_file(filepath):
     with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
 
-    csv_headers = ["Date", "Time"] + [item["name"] for item in METRIC_KEYS.values()]
+    csv_headers = ["Date", "Time"] + list(METRIC_KEYS.values())
     csv_rows = [csv_headers]
     payload = []
 
@@ -90,14 +90,12 @@ def process_txt_file(filepath):
             values = {}
             csv_line = [date_str, time_str]
 
-            for idx, config in METRIC_KEYS.items():
+            for idx, metric_name in METRIC_KEYS.items():
                 raw_val = cols[idx] if idx < len(cols) else ""
                 raw_float = parse_float(raw_val)
-                converted_val = round(raw_float / config["divisor"], 4)
                 
-                metric_name = config["name"]
-                values[metric_name] = converted_val
-                csv_line.append(converted_val)
+                values[metric_name] = raw_float
+                csv_line.append(raw_float)
 
             payload.append({"ts": ts, "values": values})
             csv_rows.append(csv_line)
@@ -109,7 +107,7 @@ def process_txt_file(filepath):
     return payload, csv_path
 
 
-def send_telemetry_nobatch(device_id, token, payload):
+def send_telemetry(device_id, token, payload):
     url = f"{TB_URL}/api/plugins/telemetry/DEVICE/{device_id}/timeseries/ANY"
     headers = {
         "Content-Type": "application/json",
@@ -117,7 +115,7 @@ def send_telemetry_nobatch(device_id, token, payload):
     }
     
     total = len(payload)
-    print(f"\n[NO BATCH] Mengirim SELURUH {total} data telemetry dalam 1 request HTTP sekaligus ke ThingsBoard...")
+    print(f"\nMengirim SELURUH {total} data telemetry dalam 1 request HTTP sekaligus ke ThingsBoard...")
     
     try:
         res = requests.post(url, data=json.dumps(payload), headers=headers)
@@ -139,7 +137,6 @@ def main():
         print("[-] Tidak ada file .txt di folder 'document'")
         return
 
-    print("--- AUTOMATION ETL (TANPA BATCH / SINGLE REQUEST) ---")
     print("Daftar file .txt:")
     for i, file in enumerate(txt_files, 1):
         print(f"  {i}. {file}")
@@ -173,7 +170,7 @@ def main():
 
     token = get_jwt_token(username, password)
     if token:
-        send_telemetry_nobatch(device_id, token, payload)
+        send_telemetry(device_id, token, payload)
 
 
 if __name__ == "__main__":
