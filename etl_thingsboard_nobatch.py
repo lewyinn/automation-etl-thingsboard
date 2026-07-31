@@ -102,8 +102,8 @@ def process_txt_file(filepath):
             payload.append({"ts": ts, "values": values})
             csv_rows.append(csv_line)
 
-    with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
+    with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f, delimiter=";")
         writer.writerows(csv_rows)
 
     return payload, csv_path
@@ -131,12 +131,12 @@ def send_telemetry_nobatch(device_id, token, payload):
 
 def main():
     if not os.path.exists(DOCS_DIR):
-        print(f"[-] Folder 'dokument' tidak ditemukan: {DOCS_DIR}")
+        print(f"[-] Folder 'document' tidak ditemukan: {DOCS_DIR}")
         return
 
     txt_files = [f for f in os.listdir(DOCS_DIR) if f.endswith(".txt")]
     if not txt_files:
-        print("[-] Tidak ada file .txt di folder 'dokument'")
+        print("[-] Tidak ada file .txt di folder 'document'")
         return
 
     print("--- AUTOMATION ETL (TANPA BATCH / SINGLE REQUEST) ---")
